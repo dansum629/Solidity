@@ -15,17 +15,48 @@ contract FundMe {
     address [] public funders;
     mapping (address funder => uint256 amountFunded) public addressToAmountFunded; // keep track of funders and their addresses
 
+    address public owner;
+    
+    constructor() {
+        owner = msg.sender;
+    } 
     function fund () public payable {
         // function allows users to send $
         // have min $ sent 
         require (getConversionRate(msg.value) >= minimumUsd, "didn't send enough ETH");  
         funders.push (msg.sender);
-        addressToAmountFunded[msg.sender] = addressToAmountFunded[msg.sender] + msg.value;
+        addressToAmountFunded[msg.sender] = addressToAmountFunded[msg.sender] + msg.value;  // Or we can write as (addressToAmountFunded[msg.sender] += msg.value;)
 
     // specifying min funds to be at greater than 1 Ether
     // returns msg if enough funds are not sent
     }
-    // function withdraw () public{}
+     function withdraw () public{
+        require(msg.sender == owner, "Must be owner!");
+
+        // for loop   for(/* starting index, ending index, step amount*/)
+
+        for (uint256 funderIndex = 0; funderIndex < funders.length; funderIndex = funderIndex + 1) {
+        // (funderIndex = funderIndex + 1) can also be written as funderIndex++
+        //looping over the address array
+        address funder = funders[funderIndex];
+        addressToAmountFunded[funder]=0;
+        }  
+        funders= new address[] (0);
+
+        // msg.sender = address of sender
+        // payable (msg.sender) = address where money goes or payable
+
+        // transfer
+        // payable(msg.sender).transfer(address(this).balance);                    // limit of 2300 gas,throws error if fails
+       
+        // send
+        // bool sendSuccess = payable(msg.sender).send (address(this).balance);     // "this" referes to this contract
+        // require (sendSuccess, "Send failed");                               // limit of 2300 gas, throws boolean if fails
+
+        //call
+        (bool callSuccess, ) = payable(msg.sender).call{value: address(this).balance}("");
+        require(callSuccess, "call failed");                                // forwards all or set gas, returns boolean if success or fail
+     }
 
 // to get price of ETH in USD
     function getPrice() public view returns (uint256) {
